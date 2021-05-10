@@ -11,6 +11,7 @@ pyopengl-accelerate = "*"
 pyvrml97 = "*"
 pygame = "*"
 openglcontext = {git = "https://github.com/mcfletch/openglcontext.git", ref = "dd03eba62c5636cff309e8def4422af807614288"}
+pillow = "*"
 
 [requires]
 python_version = "3.8"
