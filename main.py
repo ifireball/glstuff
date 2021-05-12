@@ -2,21 +2,28 @@
 An implementation of the OpenglContext tutorials without OpenglContext
 http://pyopengl.sourceforge.net/context/tutorials/index.html
 """
-from functools import lru_cache
 import pygame as pg
 from OpenGL.GL import *
 from OpenGL.arrays import vbo
 from numpy import array
 from OpenGL.GL import shaders
 
+from glwrappers import gl_enabled_vertex_attrib_array, boundVBO, shader
+
 
 def vertex_shader() -> GLuint:
     return shaders.compileShader(
         """#version 330
+
         layout(location = 0) in vec4 position;
+        layout(location = 1) in vec4 color;
+
+        smooth out vec4 theColor;
+
         void main()
         {
            gl_Position = position;
+           theColor = color;
         }""",
         GL_VERTEX_SHADER
     )
@@ -26,14 +33,13 @@ def fragment_shader() -> GLuint:
     return shaders.compileShader(
         """#version 330
 
+        smooth in vec4 theColor;
+        
         out vec4 outputColor;
         
         void main()
         {
-            float lerpValue = gl_FragCoord.y / 800.0f;
-            
-            outputColor = mix(vec4(1.0f, 0.0f, 0.0f, 1.0f),
-                vec4(0.0f, 0.0f, 1.0f, 1.0f), lerpValue);
+            outputColor = theColor;
         }""",
         GL_FRAGMENT_SHADER
     )
@@ -55,9 +61,12 @@ def initialize_vertex_buffer():
     global positionBufferObject
     positionBufferObject = vbo.VBO(
         array([
-            0.75, 0.75, 0.0, 1.0,
-            0.75, -0.75, 0.0, 1.0,
-            -0.75, -0.75, 0.0, 1.0,
+            0.0,     0.5, 0.0, 1.0,
+            0.5,  -0.366, 0.0, 1.0,
+            -0.5, -0.366, 0.0, 1.0,
+            1.0, 0.0, 0.0, 1.0,
+            0.0, 1.0, 0.0, 1.0,
+            0.0, 0.0, 1.0, 1.0,
         ], 'f'),
         usage=GL_STATIC_DRAW
     )
@@ -71,26 +80,19 @@ def init():
     vao = glGenVertexArrays(1)
     glBindVertexArray(vao)
 
+
 def display():
     glClearColor(0, 0, 0, 0)
     glClear(GL_COLOR_BUFFER_BIT)
 
-    shaders.glUseProgram(theProgram)
-    try:
-        positionBufferObject.bind()
-        try:
-            glEnableVertexAttribArray(0)
-            try:
-                glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, None)
+    with shader(theProgram):
+        with boundVBO(positionBufferObject):
+            with gl_enabled_vertex_attrib_array(0):
+                with gl_enabled_vertex_attrib_array(1):
+                    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, positionBufferObject)
+                    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, positionBufferObject+48)
 
-                glDrawArrays(GL_TRIANGLES, 0, 3)
-            finally:
-                glDisableVertexAttribArray(0)
-        finally:
-            positionBufferObject.unbind()
-
-    finally:
-        shaders.glUseProgram(0)
+                    glDrawArrays(GL_TRIANGLES, 0, 3)
 
 
 def screen_init():
