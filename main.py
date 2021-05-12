@@ -25,10 +25,15 @@ def vertex_shader() -> GLuint:
 def fragment_shader() -> GLuint:
     return shaders.compileShader(
         """#version 330
+
         out vec4 outputColor;
+        
         void main()
         {
-           outputColor = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+            float lerpValue = gl_FragCoord.y / 800.0f;
+            
+            outputColor = mix(vec4(1.0f, 0.0f, 0.0f, 1.0f),
+                vec4(0.0f, 0.0f, 1.0f, 1.0f), lerpValue);
         }""",
         GL_FRAGMENT_SHADER
     )
