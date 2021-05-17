@@ -6,10 +6,13 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-pyopengl = "*"
-pyopengl-accelerate = "*"
 pyvrml97 = "*"
-pygame = "*"
+pyshaders = "*"
+pyglbuffers = "*"
+pyglet = ">=2.0.dev2"
 
 [requires]
 python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true
