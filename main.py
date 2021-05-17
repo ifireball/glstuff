@@ -22,12 +22,13 @@ def initialize_program():
 
         in vec4 position;
         in vec4 color;
+        uniform vec2 offset;
 
         smooth out vec4 vertex_color;
 
         void main()
         {
-           gl_Position = position;
+           gl_Position = position + vec4(offset.x, offset.y, 0.0, 0.0);
            vertex_color = color;
         }
         """
@@ -48,6 +49,7 @@ def initialize_program():
     theProgram = pyshaders.from_string(vertex_shader, fragment_shader)
     print(theProgram)
     print(theProgram.attributes)
+    print(theProgram.uniforms)
 
 
 positionBufferObject: Buffer = None
@@ -82,14 +84,6 @@ def compute_position_offsets() -> (float, float):
     )
 
 
-def adjust_vertex_data(x_offset: float, y_offset: float):
-    global vertex_positions
-    ofs_vec = (x_offset, y_offset, 0, 0)
-    positionBufferObject.init([
-        (tuple(map(sum, zip(pos, ofs_vec))), color) for pos, color in vertex_positions
-    ])
-
-
 def init():
     initialize_program()
     initialize_vertex_buffer()
@@ -102,8 +96,6 @@ def init():
 def display():
     global theProgram, positionBufferObject
 
-    adjust_vertex_data(*compute_position_offsets())
-
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glClear(GL_COLOR_BUFFER_BIT)
 
@@ -111,6 +103,7 @@ def display():
 
     theProgram.use()
     try:
+        theProgram.uniforms.offset = compute_position_offsets()
         theProgram.enable_all_attributes()
         theProgram.map_attributes(positionBufferObject)
         glDrawArrays(GL_TRIANGLES, 0, 3)
