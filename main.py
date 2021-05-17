@@ -1,4 +1,6 @@
+import time
 from ctypes import byref, c_uint
+from math import pi, cos, sin
 
 import pyglet
 from pyglet.gl import *
@@ -50,16 +52,42 @@ def initialize_program():
 
 positionBufferObject: Buffer = None
 vao: GLuint = c_uint(0)
+vertex_positions = (
+    ((0.0,     0.5, 0.0, 1.0), (1.0, 0.0, 0.0, 1.0)),
+    ((0.5,  -0.366, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0)),
+    ((-0.5, -0.366, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0)),
+)
 
 
 def initialize_vertex_buffer():
     global positionBufferObject
-    positionBufferObject = Buffer.array('(4f)[position] (4f)[color]', GL_STATIC_DRAW)
-    positionBufferObject.init((
-        ((0.0,     0.5, 0.0, 1.0), (1.0, 0.0, 0.0, 1.0)),
-        ((0.5,  -0.366, 0.0, 1.0), (0.0, 1.0, 0.0, 1.0)),
-        ((-0.5, -0.366, 0.0, 1.0), (0.0, 0.0, 1.0, 1.0)),
-    ))
+    positionBufferObject = Buffer.array('(4f)[position] (4f)[color]', GL_STREAM_DRAW)
+    positionBufferObject.init(vertex_positions)
+
+
+start_time = time.monotonic()
+
+
+def compute_position_offsets() -> (float, float):
+    loop_duration = 2.0
+    scale = pi * 2.0 / loop_duration
+    radius = 0.8
+
+    elapsed_time = time.monotonic() - start_time
+    curr_time_through_loop = elapsed_time % loop_duration
+
+    return (
+        cos(curr_time_through_loop * scale) * radius,
+        sin(curr_time_through_loop * scale) * radius,
+    )
+
+
+def adjust_vertex_data(x_offset: float, y_offset: float):
+    global vertex_positions
+    ofs_vec = (x_offset, y_offset, 0, 0)
+    positionBufferObject.init([
+        (tuple(map(sum, zip(pos, ofs_vec))), color) for pos, color in vertex_positions
+    ])
 
 
 def init():
@@ -72,7 +100,9 @@ def init():
 
 
 def display():
-    global theProgram
+    global theProgram, positionBufferObject
+
+    adjust_vertex_data(*compute_position_offsets())
 
     glClearColor(0.0, 0.0, 0.0, 1.0)
     glClear(GL_COLOR_BUFFER_BIT)
